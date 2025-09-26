@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Breathing Bubble Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  body{
+    margin:0;height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:"Poppins",sans-serif;
+    background:linear-gradient(-45deg,#c7d2fe,#fce7f3,#d1fae5,#bfdbfe);
+    background-size:400% 400%;animation:bg 18s ease infinite;
+  }
+  @keyframes bg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+  .card{
+    background:linear-gradient(135deg,rgba(255,255,255,.7),rgba(255,255,255,.4));
+    backdrop-filter:blur(12px);
+    border-radius:24px;padding:40px;width:400px;
+    box-shadow:0 15px 40px rgba(0,0,0,.15);text-align:center;position:relative;
+  }
+  h1{
+    margin:0 0 18px;font-size:26px;font-weight:700;
+    background:linear-gradient(135deg,#2563eb,#8b5cf6,#ec4899);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+
+  /* Progress ring + bubble */
+  .progress-ring{position:relative;width:220px;height:220px;margin:auto}
+  .progress-ring svg{position:relative;display:block}
+  .progress-ring circle{fill:none;stroke-width:12;transform:rotate(-90deg);transform-origin:50% 50%}
+  .progress-ring .background{stroke:rgba(255,255,255,.45)}
+  .progress-ring .progress{stroke:url(#grad);stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+
+  .bubble{
+    width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,#fff,#93c5fd,#6366f1);
+    box-shadow:0 0 60px rgba(99,102,241,.5);
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);animation:none;
+  }
+  .breathing{animation:breathe 12s ease-in-out infinite}
+  @keyframes breathe{
+    0%{transform:translate(-50%,-50%) scale(.8)}
+    25%{transform:translate(-50%,-50%) scale(1.3)}
+    50%{transform:translate(-50%,-50%) scale(1.3)}
+    75%{transform:translate(-50%,-50%) scale(.8)}
+    100%{transform:translate(-50%,-50%) scale(.8)}
+  }
+
+  .instructions{margin-top:16px;font-size:20px;font-weight:600;color:#1e293b;min-height:28px}
+  .scoreboard{margin-top:10px;font-size:16px;font-weight:500;color:#374151}
+  .timer{margin-top:4px;font-size:14px;color:#6b7280}
+  .encouragement{margin-top:12px;font-size:14px;color:#10b981;font-style:italic;min-height:20px}
+
+  .controls{margin-top:20px;display:flex;justify-content:center;gap:16px}
+  button{
+    padding:10px 18px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;color:#fff;
+    transition:transform .2s ease,opacity .2s ease;
+  }
+  button:active{transform:scale(.96)}
+  #startBtn{background:linear-gradient(135deg,#22c55e,#16a34a)}
+  #stopBtn{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+
+  a{display:block;margin-top:22px;text-decoration:none;color:#2563eb;font-size:14px;font-weight:600}
+  a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🌬️ Breathing Bubble</h1>
+
+    <div class="progress-ring">
+      <svg width="220" height="220">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#3b82f6"/>
+            <stop offset="50%" stop-color="#8b5cf6"/>
+            <stop offset="100%" stop-color="#ec4899"/>
+          </linearGradient>
+        </defs>
+        <!-- r=100 so circumference ≈ 628 -->
+        <circle class="background" cx="110" cy="110" r="100"/>
+        <circle class="progress"   cx="110" cy="110" r="100"/>
+      </svg>
+      <div class="bubble" id="bubble"></div>
+    </div>
+
+    <div class="instructions" id="text">Press Start to Begin</div>
+    <div class="scoreboard">Laps Completed: <span id="laps">0</span></div>
+    <div class="timer" id="timer">⏱️ 0:00</div>
+    <div class="encouragement" id="encouragement"></div>
+
+    <div class="controls">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Stop</button>
+    </div>
+
+    <a href="games.html">⬅ Back to Games Hub</a>
+  </div>
+
+<script>
+  // ====== Elements
+  const bubble = document.getElementById("bubble");
+  const text   = document.getElementById("text");
+  const lapsEl = document.getElementById("laps");
+  const timerEl= document.getElementById("timer");
+  const encour = document.getElementById("encouragement");
+  const startBtn = document.getElementById("startBtn");
+  const stopBtn  = document.getElementById("stopBtn");
+  const progressCircle = document.querySelector(".progress-ring .progress");
+
+  // ====== Config
+  const PHASE_MS = 3000; // set to 1000 for faster testing
+  const phases   = ["Breathe In…","Hold…","Breathe Out…","Hold…"];
+  const messages = ["You're doing great ✨","Stay calm 🌸","Relax your shoulders 🌿","Focus on your breath 💙"];
+
+  // ====== State
+  let i = 0, laps = 0, seconds = 0;
+  let loop = null, timer = null;
+
+  // ====== Progress circle math
+  const radius = 100;
+  const C = 2 * Math.PI * radius; // circumference (~628)
+
+  // IMPORTANT: set SVG attributes (not style) so dash works everywhere
+  progressCircle.setAttribute("stroke-dasharray", String(C));
+  progressCircle.setAttribute("stroke-dashoffset", String(C)); // start empty
+
+  function setProgressByLaps(l){
+    const progress = (l % 10) / 10;          // 10 laps = full ring
+    const offset = C - progress * C;
+    progressCircle.setAttribute("stroke-dashoffset", String(offset));
+  }
+
+  function fmt(sec){
+    const m = Math.floor(sec/60);
+    const s = (sec%60).toString().padStart(2,"0");
+    return `${m}:${s}`;
+  }
+
+  startBtn.addEventListener("click", ()=>{
+    if (loop) return; // already running
+    bubble.classList.add("breathing");
+    text.textContent = phases[i % phases.length];
+
+    loop = setInterval(()=>{
+      text.textContent = phases[i % phases.length];
+
+      // Every 4 phases = 1 lap (when we wrap around)
+      if (i % phases.length === 0 && i > 0){
+        laps++;
+        lapsEl.textContent = laps;
+        encour.textContent = messages[Math.floor(Math.random()*messages.length)];
+        setProgressByLaps(laps);
+      }
+      i++;
+    }, PHASE_MS);
+
+    timer = setInterval(()=>{
+      seconds++;
+      timerEl.textContent = `⏱️ ${fmt(seconds)}`;
+    }, 1000);
+  });
+
+  stopBtn.addEventListener("click", ()=>{
+    clearInterval(loop); clearInterval(timer);
+    loop = null; timer = null;
+    bubble.classList.remove("breathing");
+    text.textContent = "Session Stopped";
+    encour.textContent = "";
+  });
+</script>
+</body>
+</html>
