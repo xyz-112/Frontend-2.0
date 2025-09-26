@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Stress Buddy — Universe Advanced</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;
+  background:linear-gradient(135deg,#fdf2f8,#dbeafe);
+  font-family:Poppins,system-ui;}
+.card{width:min(580px,95vw);padding:18px;background:rgba(255,255,255,.9);
+  backdrop-filter:blur(12px);border-radius:22px;box-shadow:0 16px 38px rgba(0,0,0,.15);
+  text-align:center;position:relative;}
+h1{margin:.2rem 0 .5rem;color:#334155}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:.3rem 0 .7rem}
+.tab{border:0;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;color:#fff;background:#94a3b8}
+.tab.active{background:#8b5cf6}
+.sel-row{margin:.4rem 0 .8rem}
+select{padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1;font-weight:600}
+.pet{font-size:96px;transition:transform .5s;margin-top:2px;animation:bounce 3s infinite ease-in-out}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.evolveAnim{animation:glow 1.6s ease forwards}
+@keyframes glow{0%{transform:scale(1);filter:drop-shadow(0 0 0 #fff)}50%{transform:scale(1.5);filter:drop-shadow(0 0 20px #f0f)}100%{transform:scale(1);filter:drop-shadow(0 0 0 #fff)}}
+.flash{position:absolute;top:8%;left:50%;transform:translateX(-50%);
+  font-size:1.2rem;font-weight:800;color:#7c3aed;animation:fade 2s forwards}
+@keyframes fade{0%{opacity:1}100%{opacity:0}}
+.mood{font-weight:700;color:#334155;margin:.4rem 0}
+.bar{height:14px;background:#e5e7eb;border-radius:8px;overflow:hidden;margin:8px 0 10px}
+.fill{height:100%;width:70%;background:linear-gradient(90deg,#22c55e,#60a5fa);transition:width .4s,background .6s}
+.actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+button.action{border:0;border-radius:14px;padding:10px 16px;font-weight:700;cursor:pointer;transition:transform .15s;font-size:22px;color:#fff}
+button.action:hover{transform:scale(1.12)}
+.feed{background:#22c55e}.music{background:#6366f1}.rest{background:#0ea5e9}.play{background:#f97316}
+.floating{position:absolute;font-size:26px;opacity:.95;animation:floatUp 2s forwards ease-out;pointer-events:none}
+@keyframes floatUp{from{transform:translateY(0);opacity:1}to{transform:translateY(-70px);opacity:0}}
+.dashboard{margin-top:14px;text-align:left;padding:10px;border-radius:14px;background:#f1f5f9}
+.stat{margin:4px 0;font-size:.9rem;color:#334155;font-weight:600}
+.xpbar{height:10px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin-top:4px}
+.xpfill{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a78bfa);transition:width .4s}
+.soundToggle{margin-top:8px;font-size:.85rem;cursor:pointer}
+a.back{display:inline-block;margin-top:12px;color:#2563eb;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <h1>🐾 Stress Buddy</h1>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-cat="pets">🐶 Pets</button>
+      <button class="tab" data-cat="insects">🦋 Insects</button>
+      <button class="tab" data-cat="spirits">👻 Spirits</button>
+      <button class="tab" data-cat="mythical">🐉 Mythical</button>
+    </div>
+    <div class="sel-row"><select id="creature"></select></div>
+    <div class="pet" id="pet">🐶</div>
+    <div class="mood" id="moodTxt">Mood: Happy 🙂</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+
+    <div class="actions">
+      <button class="action feed" onclick="care('feed')">🥗</button>
+      <button class="action music" onclick="care('music')">🎵</button>
+      <button class="action rest" onclick="care('rest')">💤</button>
+      <button class="action play" onclick="care('play')">🎮</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+      <div class="stat">Stage: <span id="stageTxt">Baby</span></div>
+      <div class="stat">XP: <span id="xpTxt">0</span>/100</div>
+      <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+      <div class="stat">Streak: <span id="streakTxt">0</span> days</div>
+      <div class="stat">Last Care: <span id="lastCareTxt">Never</span></div>
+    </div>
+
+    <div class="soundToggle">
+      <label><input type="checkbox" id="soundChk"> 🔊 Sounds</label>
+    </div>
+
+    <a href="games.html" class="back">⬅ Back to Games Hub</a>
+  </div>
+
+<script>
+/* ===== ROSTER ===== */
+const roster={
+  pets:{
+    Dog:["🐾","🐶","🐕","🐺"],
+    Cat:["🐾","🐱","🐈","🦁"],
+    Rabbit:["🐣","🐰","🐇","🌟"],
+    Panda:["🐼","🐼✨","🐼🌿","🐉"],
+    Fox:["🦊","🦊","🦊✨","🦊🔥"],
+    Turtle:["🐢","🐢","🐢🌿","🐢✨"],
+    Bird:["🐦","🐦","🕊️","🦅"]
+  },
+  insects:{
+    Butterfly:["🥚","🐛","🦋","🦋✨"],
+    Bee:["🍯","🐝","🐝👑","🐝✨"],
+    Firefly:["🌱","🪰","✨🔥","🪄"],
+    Ladybug:["🐞","🐞✨","🐞🌸","🐞🌟"]
+  },
+  spirits:{
+    Ghost:["👻","👻✨","👻🌙","👻🔮"],
+    SpiritOrb:["✨","🔮","🌌","🧚"],
+    ForestSpirit:["🌱","🌿✨","🧝","🌲🧚"]
+  },
+  mythical:{
+    Dragon:["🥚","🐉","🐉🔥","🐉🌟"],
+    Unicorn:["🐴","🦄","🦄✨","🌈🦄"],
+    Phoenix:["🥚","🐦","🔥🦅","🐦‍🔥"],
+    Kitsune:["🦊","🦊✨","🦊🔥","🦊🧝"]
+  }
+};
+
+/* ===== STATE ===== */
+let category=localStorage.getItem("buddyCategory")||"pets";
+let creature=localStorage.getItem("buddyCreature")||"Dog";
+let happiness=parseInt(localStorage.getItem("buddyHappiness")||"70");
+let xp=parseInt(localStorage.getItem("buddyXP")||"0");
+let streak=parseInt(localStorage.getItem("buddyStreak")||"0");
+let lastCare=parseInt(localStorage.getItem("buddyLastCare")||"0");
+let soundsOn=false;
+
+/* ===== ELEMENTS ===== */
+const tabs=document.getElementById("tabs"),creatureSelect=document.getElementById("creature");
+const petEl=document.getElementById("pet"),moodTxt=document.getElementById("moodTxt"),fill=document.getElementById("fill");
+const stageTxt=document.getElementById("stageTxt"),xpTxt=document.getElementById("xpTxt"),xpFill=document.getElementById("xpFill");
+const streakTxt=document.getElementById("streakTxt"),lastCareTxt=document.getElementById("lastCareTxt"),card=document.getElementById("card");
+const soundChk=document.getElementById("soundChk");
+
+/* ===== HELPERS ===== */
+function stageFromHappiness(h){if(h<30)return 0;if(h<60)return 1;if(h<85)return 2;return 3;}
+function moodLabel(){if(happiness>80)return"Excited 🤩";if(happiness>60)return"Happy 🙂";if(happiness>40)return"Okay 😐";if(happiness>20)return"Sad 😢";return"Stressed 😟";}
+function updateBar(){fill.style.width=happiness+"%";if(happiness>70)fill.style.background="linear-gradient(90deg,#22c55e,#86efac)";else if(happiness>40)fill.style.background="linear-gradient(90deg,#facc15,#fde047)";else fill.style.background="linear-gradient(90deg,#ef4444,#fca5a5)";}
+function evolveTo(emoji){petEl.classList.add("evolveAnim");const flash=document.createElement("div");flash.className="flash";flash.textContent="✨ Evolution!";card.appendChild(flash);setTimeout(()=>flash.remove(),1800);setTimeout(()=>{petEl.textContent=emoji;petEl.classList.remove("evolveAnim");},900);}
+function spawnFloating(symbol){const f=document.createElement("div");f.className="floating";f.textContent=symbol;f.style.left=(50+(Math.random()*30-15))+"%";f.style.top="54%";card.appendChild(f);setTimeout(()=>f.remove(),2000);}
+function formatAgo(ts){if(!ts)return"Never";const diff=Date.now()-ts;if(diff<60000)return"Just now";const m=Math.floor(diff/60000);if(m<60)return m+"m ago";const h=Math.floor(m/60);if(h<24)return h+"h ago";const d=Math.floor(h/24);return d+"d ago";}
+
+/* ===== RENDER ===== */
+function render(){const stages=roster[category][creature];const s=stageFromHappiness(happiness);const newEmoji=stages[s];if(petEl.textContent!==newEmoji)evolveTo(newEmoji);else petEl.textContent=newEmoji;moodTxt.textContent="Mood: "+moodLabel();updateBar();stageTxt.textContent=["Baby","Normal","Adult","Legendary"][s];xpTxt.textContent=xp%100;xpFill.style.width=(xp%100)+"%";streakTxt.textContent=streak;lastCareTxt.textContent=formatAgo(lastCare);localStorage.setItem("buddyCategory",category);localStorage.setItem("buddyCreature",creature);localStorage.setItem("buddyHappiness",happiness);localStorage.setItem("buddyXP",xp);localStorage.setItem("buddyStreak",streak);localStorage.setItem("buddyLastCare",lastCare);}
+
+/* ===== CARE ===== */
+function care(type){if(type==='feed'){happiness=Math.min(100,happiness+10);spawnFloating("🍎");}if(type==='music'){happiness=Math.min(100,happiness+8);spawnFloating("🎶");}if(type==='rest'){happiness=Math.min(100,happiness+7);spawnFloating("💤");}if(type==='play'){happiness=Math.min(100,happiness+9);spawnFloating("🎲");}petEl.style.transform="scale(1.24)";setTimeout(()=>petEl.style.transform="",420);xp+=10;if(xp%100===0){happiness=Math.min(100,happiness+5);}const today=new Date().toDateString();const lastDay=new Date(lastCare).toDateString();if(today!==lastDay){streak++;happiness=Math.min(100,happiness+5);}lastCare=Date.now();render();if(soundsOn)beep();}
+
+/* ===== SOUND ===== */
+let audioCtx=null;function beep(freq=880,dur=0.15){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=freq;g.gain.value=0.001;const t=audioCtx.currentTime;g.gain.exponentialRampToValueAtTime(0.2,t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+dur);o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+dur+0.02);}
+soundChk.onchange=e=>soundsOn=e.target.checked;
+
+/* ===== INIT ===== */
+function setActiveTab(){[...tabs.querySelectorAll(".tab")].forEach(b=>b.classList.toggle("active",b.dataset.cat===category));}
+function populateCreatures(){creatureSelect.innerHTML="";Object.keys(roster[category]).forEach(name=>{const opt=document.createElement("option");opt.value=name;opt.textContent=name;creatureSelect.appendChild(opt);});if(!roster[category][creature])creature=Object.keys(roster[category])[0];creatureSelect.value=creature;}
+tabs.addEventListener("click",e=>{const btn=e.target.closest(".tab");if(!btn)return;category=btn.dataset.cat;setActiveTab();populateCreatures();render();});
+creatureSelect.addEventListener("change",()=>{creature=creatureSelect.value;render();});
+setInterval(()=>{happiness=Math.max(0,happiness-1);render();},12000);
+setActiveTab();populateCreatures();render();
+</script>
+</body>
+</html>
