@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mood Melody</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg1:#e0f2fe;--bg2:#fce7f3;--c1:#60a5fa;--c2:#a78bfa;--c3:#f472b6;--c4:#34d399}
+    body{margin:0;height:100vh;display:grid;place-items:center;
+          background:linear-gradient(135deg,var(--bg1),var(--bg2));
+          font-family:Poppins,system-ui}
+    .card{width:min(560px,92vw);padding:22px;background:rgba(255,255,255,.75);
+          backdrop-filter:blur(10px);border-radius:18px;
+          box-shadow:0 12px 30px rgba(0,0,0,.12);text-align:center}
+    h1{margin:.1rem 0 1rem;
+       background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3));
+       -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .pad{aspect-ratio:1;border-radius:16px;display:grid;place-items:center;
+         color:#fff;font-weight:800;font-size:1.05rem;user-select:none;
+         cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.12);
+         transition:transform .08s,filter .08s}
+    .pad:active{transform:scale(.97)}
+    .p0{background:linear-gradient(135deg,#3b82f6,#60a5fa)}
+    .p1{background:linear-gradient(135deg,#8b5cf6,#a78bfa)}
+    .p2{background:linear-gradient(135deg,#ec4899,#f472b6)}
+    .p3{background:linear-gradient(135deg,#10b981,#34d399)}
+    .controls{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+    button{border:0;border-radius:12px;padding:10px 16px;font-weight:700;
+           color:#fff;background:#2563eb;cursor:pointer}
+    button.alt{background:#64748b}
+    .status{margin-top:10px;color:#334155;font-weight:600;min-height:1.3em}
+    .level{margin-top:8px;font-size:.9rem;color:#475569}
+    a{display:inline-block;margin-top:14px;color:#2563eb;text-decoration:none;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎶 Mood Melody</h1>
+    <div class="grid">
+      <div class="pad p0" data-i="0">Do</div>
+      <div class="pad p1" data-i="1">Re</div>
+      <div class="pad p2" data-i="2">Mi</div>
+      <div class="pad p3" data-i="3">So</div>
+    </div>
+
+    <div class="controls">
+      <button id="start">Start</button>
+      <button id="reset" class="alt">Reset</button>
+    </div>
+
+    <div class="level" id="level">Level: 0</div>
+    <div class="status" id="status">Tap Start. Repeat the melody ✨</div>
+    <a href="games.html">⬅ Back to Games Hub</a>
+  </div>
+
+  <script>
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const pads=[...document.querySelectorAll('.pad')];
+    const statusEl=document.getElementById('status');
+    const lvlEl=document.getElementById('level');
+
+    const freqs=[261.63,293.66,329.63,392.00]; // Do Re Mi So
+    let seq=[], input=[], locked=true, level=0, step=560;
+
+    // 🎹 Play a nice tone (triangle wave + soft echo)
+    function playTone(i,dur=0.6){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type="triangle"; o.frequency.value=freqs[i];
+      const delay=ctx.createDelay(); delay.delayTime.value=0.2;
+      const fb=ctx.createGain(); fb.gain.value=0.25;
+      delay.connect(fb).connect(delay);
+      o.connect(g).connect(ctx.destination); g.connect(delay).connect(ctx.destination);
+
+      const now=ctx.currentTime;
+      g.gain.setValueAtTime(0.001,now);
+      g.gain.exponentialRampToValueAtTime(.3,now+0.01);
+      g.gain.exponentialRampToValueAtTime(.001,now+dur);
+
+      o.start(now); o.stop(now+dur+0.1);
+      flashPad(i,dur*1000);
+    }
+
+    function flashPad(i,ms){
+      pads[i].style.filter='brightness(1.35)';
+      setTimeout(()=>pads[i].style.filter='',ms);
+    }
+    function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+    async function playSeq(){
+      locked=true; input=[]; statusEl.textContent="Listen…";
+      await sleep(400);
+      for(const i of seq){ playTone(i); await sleep(step); }
+      locked=false; statusEl.textContent="Your turn 🎵";
+    }
+
+    function nextRound(){
+      seq.push(Math.floor(Math.random()*4));
+      level=seq.length; lvlEl.textContent="Level: "+level;
+      if(level%4===0 && step>380) step-=30;
+      playSeq();
+    }
+
+    pads.forEach(p=>p.addEventListener("click",()=>{
+      const i=+p.dataset.i;
+      if(locked) return;
+      playTone(i,0.35);
+      input.push(i);
+      if(!input.every((v,idx)=>v===seq[idx])){
+        statusEl.textContent="Oops — try again 💙";
+        input=[]; setTimeout(playSeq,650); return;
+      }
+      if(input.length===seq.length){
+        statusEl.textContent="Nice!";
+        setTimeout(nextRound,650);
+      }
+    }));
+
+    document.getElementById('start').onclick=()=>{
+      if(ctx.state==="suspended") ctx.resume();
+      seq=[]; level=0; step=560; nextRound();
+    };
+    document.getElementById('reset').onclick=()=>{
+      seq=[]; input=[]; level=0;
+      lvlEl.textContent="Level: 0"; locked=true;
+      statusEl.textContent="Tap Start. Repeat the melody ✨";
+    };
+  </script>
+</body>
+</html>
