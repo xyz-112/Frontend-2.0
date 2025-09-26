@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Zen Garden — Ultimate</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#e0e7ff; --bg2:#e0f2fe; --panel:rgba(255,255,255,.78);
+    --ink:#334155; --accent:#2563eb; --sandTop:#ffffff; --sandBottom:#e5e7eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,var(--bg1),var(--bg2));transition:background 1.5s linear;font-family:Poppins,system-ui;}
+  .wrap{width:min(920px,96vw);padding:16px;background:var(--panel);backdrop-filter:blur(12px);border-radius:18px;box-shadow:0 12px 28px rgba(0,0,0,.12)}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  h1{margin:.2rem 0;font-size:1.2rem;color:var(--ink)}
+  .sub{color:#64748b;font-weight:600;font-size:.9rem}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+  button,.seg,select,label.toggle{border:0;border-radius:12px;padding:9px 12px;font-weight:700;cursor:pointer;color:#fff;background:#64748b}
+  button.primary{background:var(--accent)}
+  .seg{display:flex;gap:10px;align-items:center;background:#0ea5e9}
+  .seg input[type=range]{width:130px}
+  select{background:#1f2937}
+  label.toggle{display:flex;align-items:center;gap:8px;background:#6b7280}
+  label.toggle input{accent-color:#22c55e}
+  canvas{width:100%;height:480px;border-radius:14px;display:block;background:#f3f4f6;box-shadow:inset 0 6px 22px rgba(0,0,0,.1)}
+  .hint{margin-top:8px;color:#475569;font-size:.92rem}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  a.back{display:inline-block;margin-top:10px;color:#2563eb;font-weight:700;text-decoration:none}
+  body.dark{--bg1:#020617;--bg2:#111827;--panel:rgba(2,6,23,.6);--ink:#e5e7eb;--accent:#8b5cf6;--sandTop:#111827;--sandBottom:#0b1220}
+  body.magical{--bg1:#fce7f3;--bg2:#e9d5ff;--panel:rgba(255,255,255,.75);--ink:#312e81;--accent:#ef5da8;--sandTop:#fff7fb;--sandBottom:#f5e9ff}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <h1>🪴 Zen Garden</h1>
+        <div class="sub">Design your own peaceful garden with stones and flowers.</div>
+      </div>
+      <div class="row">
+        <!-- NEW: Save Thumb + existing controls -->
+        <button id="saveThumb" title="Save thumbnail to Games Hub">Save Thumb</button>
+        <button id="save" class="primary" title="Save as PNG">Save PNG</button>
+        <button id="exportBtn" title="Export JSON">Export</button>
+        <button id="importBtn" title="Import JSON">Import</button>
+        <button id="clear" title="Clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button id="modeRake" class="primary" title="Rake">🧹 Rake</button>
+      <button id="modeStone" title="Stone">🪨 Stone</button>
+      <button id="modeFlower" title="Flower">🌸 Flower</button>
+      <button id="undo" title="Undo">↩️ Undo</button>
+
+      <div class="seg" title="Brush size">Brush <input id="size" type="range" min="1" max="8" value="3"/></div>
+
+      <div class="seg" title="Theme">
+        Theme
+        <select id="theme">
+          <option value="calm">Calm</option>
+          <option value="dark">Dark</option>
+          <option value="magical">Magical</option>
+        </select>
+      </div>
+
+      <label class="toggle" title="Ambient doodles">✨ Ambient <input id="ambient" type="checkbox" checked/></label>
+      <label class="toggle" title="Soft sounds">🔊 Sound <input id="sound" type="checkbox"/></label>
+
+      <!-- NEW: Random Garden -->
+      <button id="randomBtn" title="Generate a pretty starting layout">🎲 Random</button>
+
+      <input id="fileInput" type="file" accept="application/json" style="display:none"/>
+    </div>
+
+    <canvas id="cv" width="1200" height="480"></canvas>
+
+    <div class="hint">
+      Drag to <b>rake</b>. Choose <b>Stone</b> or <b>Flower</b> then tap to place.
+      <b>Undo</b> removes the last action. <b>Save PNG</b> saves an image.
+      <b>Export/Import</b> restores your garden.
+      <b>Save Thumb</b> updates your Games Hub preview.
+    </div>
+
+    <a href="games.html" class="back">⬅ Back to Games Hub</a>
+  </div>
+
+<script>
+/* ===== Canvas + State ===== */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d', { alpha:false });
+
+let mode='rake', drawing=false, last=null;
+let strokes=[], items=[], history=[], floaters=[];
+let ambientOn=true, soundsOn=false;
+let hue=200, lastTs=performance.now();
+
+/* ===== UI ===== */
+const $=q=>document.querySelector(q);
+const modeRake=$("#modeRake"), modeStone=$("#modeStone"), modeFlower=$("#modeFlower");
+const undoBtn=$("#undo"), clearBtn=$("#clear"), saveBtn=$("#save");
+const exportBtn=$("#exportBtn"), importBtn=$("#importBtn"), fileInput=$("#fileInput");
+const sizeInp=$("#size"), ambientChk=$("#ambient"), soundChk=$("#sound"), themeSel=$("#theme");
+const saveThumbBtn=$("#saveThumb"), randomBtn=$("#randomBtn");
+
+/* ===== Theme utils ===== */
+function currentTheme(){return document.body.classList.contains('dark')?'dark':(document.body.classList.contains('magical')?'magical':'calm')}
+function getVar(name){return getComputedStyle(document.body).getPropertyValue(name).trim()||'#fff'}
+
+/* ===== Sand & Draw ===== */
+function sandBase(t=0){
+  const g=ctx.createLinearGradient(0,0,0,cv.height);
+  g.addColorStop(0,getVar('--sandTop')); g.addColorStop(1,getVar('--sandBottom'));
+  ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.strokeStyle='rgba(107,114,128,.18)'; ctx.lineWidth=1.1;
+  const cx=cv.width/2, cy=cv.height*0.62;
+  for(let r=60;r<cv.width;r+=80){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();}
+  ctx.globalAlpha=0.06; for(let i=0;i<6;i++){const y=(i*70+(t/16)%70);ctx.fillStyle='#000';ctx.fillRect(0,y,cv.width,35)} ctx.globalAlpha=1;
+}
+function rakeLine(s){ctx.strokeStyle='rgba(71,85,105,.55)';ctx.lineWidth=s.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(s.x0,s.y0);ctx.lineTo(s.x1,s.y1);ctx.stroke();}
+function drawStone(x,y,seed=0){const r=14+(seed%10);const grad=ctx.createRadialGradient(x-r/3,y-r/3,2,x,y,r);grad.addColorStop(0,'#ffffff');grad.addColorStop(1,'#9ca3af');ctx.fillStyle=grad;ctx.beginPath();ctx.ellipse(x,y,r*1.25,r,.25,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(0,0,0,.12)';ctx.beginPath();ctx.ellipse(x+6,y+10,r*1.1*0.9,r*0.5,.2,0,Math.PI*2);ctx.fill();}
+function drawFlowerItem(it,now){const age=(now-it.created)/1000;const sway=Math.sin(now/900+it.x*0.01)*0.15;const sc=Math.min(1,age*1.8);ctx.save();ctx.translate(it.x,it.y);ctx.rotate(sway);ctx.scale(sc,sc);ctx.font='28px Poppins';ctx.textAlign='center';ctx.fillText('🌸',0,10);ctx.restore();}
+function drawItems(now){for(const it of items){if(it.type==='stone') drawStone(it.x,it.y,Math.floor(it.x+it.y)); else drawFlowerItem(it,now);}}
+const doodleSets={calm:['🌸','✨','🫧','🌼'],dark:['✨','🌙','🪐','⭐'],magical:['🫧','✨','🧚','🌈']};
+function spawnFloater(){if(!ambientOn||floaters.length>22)return;const pool=doodleSets[currentTheme()]||doodleSets.calm;const emoji=pool[Math.floor(Math.random()*pool.length)];floaters.push({x:Math.random()*cv.width,y:cv.height+30,v:0.15+Math.random()*0.45,a:0.95,emoji,angle:Math.random()*Math.PI});}
+function drawFloater(f){ctx.save();ctx.translate(f.x,f.y);ctx.rotate(Math.sin(f.y/50+f.angle)*0.18);ctx.globalAlpha=f.a;ctx.font='22px Poppins';ctx.textAlign='center';ctx.fillText(f.emoji,0,0);ctx.restore();}
+
+/* ===== Sound (no files) ===== */
+let audioCtx=null; function beep(freq=440,dur=0.12,type='sine',gain=0.15){if(!soundsOn)return;if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=0.0001;const t=audioCtx.currentTime;g.gain.exponentialRampToValueAtTime(gain,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g).connect(audioCtx.destination);o.start(t);o.stop(t+dur+0.02);}
+
+/* ===== Redraw & Loop ===== */
+function redraw(now){sandBase(now);strokes.forEach(rakeLine);drawItems(now);for(let i=floaters.length-1;i>=0;i--){drawFloater(floaters[i]);}}
+function tick(ts){const dt=(ts-lastTs)/16;lastTs=ts;hue=(hue+0.05)%360;const th=currentTheme();if(th==='calm'){document.body.style.background=`linear-gradient(135deg,hsl(${(hue+200)%360},80%,92%),hsl(${(hue+260)%360},80%,92%))`;}else if(th==='dark'){document.body.style.background=`linear-gradient(135deg,#020617,#0b1220)`;}else{document.body.style.background=`linear-gradient(135deg,hsl(${(hue+310)%360},90%,95%),hsl(${(hue+20)%360},90%,95%))`;} if(ambientOn && Math.random()<0.02) spawnFloater(); for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.y-=f.v*dt;f.a=Math.max(0,f.a-0.0006*dt);if(f.y<-30||f.a<=0) floaters.splice(i,1);} redraw(ts); requestAnimationFrame(tick);}
+
+/* ===== Pointer ===== */
+cv.addEventListener('pointerdown',e=>{drawing=true;last=[e.offsetX,e.offsetY];if(mode==='stone'){items.push({type:'stone',x:last[0],y:last[1],created:performance.now()});history.push({kind:'item'});beep(220,0.07,'triangle',0.12);} if(mode==='flower'){items.push({type:'flower',x:last[0],y:last[1],created:performance.now()});history.push({kind:'item'});beep(880,0.08,'sine',0.08);}});
+cv.addEventListener('pointermove',e=>{if(!drawing||mode!=='rake')return;const x=e.offsetX,y=e.offsetY;const s={x0:last[0],y0:last[1],x1:x,y1:y,w:+sizeInp.value};strokes.push(s);history.push({kind:'stroke',ref:s});rakeLine(s);last=[x,y];beep(480,0.03,'sine',0.03);});
+addEventListener('pointerup',()=>{drawing=false;});
+
+/* ===== Controls ===== */
+function setMode(m){mode=m;modeRake.classList.toggle('primary',m==='rake');modeStone.classList.toggle('primary',m==='stone');modeFlower.classList.toggle('primary',m==='flower');}
+modeRake.onclick=()=>setMode('rake'); modeStone.onclick=()=>setMode('stone'); modeFlower.onclick=()=>setMode('flower');
+undoBtn.onclick=()=>{for(let i=history.length-1;i>=0;i--){const h=history[i];if(h.kind==='stroke'){strokes.pop();history.splice(i,1);break;} if(h.kind==='item'){items.pop();history.splice(i,1);break;}} redraw(performance.now());};
+clearBtn.onclick=()=>{strokes=[];items=[];history=[];redraw(performance.now());};
+
+saveBtn.onclick=()=>{const a=document.createElement('a');a.download='zen-garden.png';a.href=cv.toDataURL('image/png');a.click();saveThumb();}; // also save thumb
+exportBtn.onclick=()=>{const data={strokes,items};const blob=new Blob([JSON.stringify(data)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='zen-garden.json';a.click();URL.revokeObjectURL(url);};
+importBtn.onclick=()=>fileInput.click();
+fileInput.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);strokes=Array.isArray(d.strokes)?d.strokes:[];items=Array.isArray(d.items)?d.items:[];history=[];redraw(performance.now());}catch{alert('Invalid JSON')}};r.readAsText(f);};
+
+ambientChk.onchange=e=>ambientOn=e.target.checked;
+soundChk.onchange=e=>soundsOn=e.target.checked;
+themeSel.onchange=e=>{document.body.classList.remove('dark','magical');if(e.target.value==='dark')document.body.classList.add('dark');if(e.target.value==='magical')document.body.classList.add('magical');redraw(performance.now());};
+
+/* ===== NEW: Save thumbnail to localStorage ===== */
+function saveThumb(){
+  // create a small offscreen canvas and draw a scaled snapshot
+  const w=360, h=200;
+  const off=document.createElement('canvas'); off.width=w; off.height=h;
+  const ox=off.getContext('2d', {alpha:false});
+  // background fill to avoid transparent edges
+  ox.fillStyle='#ffffff'; ox.fillRect(0,0,w,h);
+  ox.drawImage(cv, 0,0, w,h);
+  const data=off.toDataURL('image/png');
+  try{ localStorage.setItem('zenGardenThumb', data); }catch(e){}
+}
+saveThumbBtn.onclick=saveThumb;
+
+/* ===== NEW: Random Garden generator ===== */
+function randomGarden(){
+  // reset
+  strokes=[]; items=[]; history=[];
+  // rake arcs
+  const cx=cv.width/2, cy=cv.height*0.6;
+  const layers=6, step=48;
+  for(let i=0;i<layers;i++){
+    const r=80+i*step;
+    // draw arcs as many small line segments for a nice ripple
+    for(let a=-Math.PI; a<Math.PI; a+=0.12){
+      const x0=cx+Math.cos(a)*r,     y0=cy+Math.sin(a)*r;
+      const x1=cx+Math.cos(a+0.12)*r,y1=cy+Math.sin(a+0.12)*r;
+      const seg={x0,y0,x1,y1,w:3};
+      strokes.push(seg);
+    }
+  }
+  // stones
+  const stoneCount=6+Math.floor(Math.random()*4);
+  for(let i=0;i<stoneCount;i++){
+    const x=100+Math.random()*(cv.width-200);
+    const y=140+Math.random()*(cv.height-220);
+    items.push({type:'stone',x,y,created:performance.now()});
+  }
+  // flowers
+  const flowerCount=5+Math.floor(Math.random()*4);
+  for(let i=0;i<flowerCount;i++){
+    const x=120+Math.random()*(cv.width-240);
+    const y=160+Math.random()*(cv.height-260);
+    items.push({type:'flower',x,y,created:performance.now()});
+  }
+  redraw(performance.now());
+}
+randomBtn.onclick=randomGarden;
+
+/* ===== Init ===== */
+sandBase(); redraw(performance.now()); requestAnimationFrame(tick);
+addEventListener('resize',()=>{redraw(performance.now());});
+</script>
+</body>
+</html>
