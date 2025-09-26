@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Games Hub — Mental Wellness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(-45deg, #dbeafe, #ede9fe, #fce7f3, #dcfce7);
+  background-size: 400% 400%;
+  animation: bg 20s ease infinite;
+  min-height: 100vh;
+}
+@keyframes bg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 40px 20px;
+}
+h1 {
+  text-align: center;
+  font-weight: 800;
+  font-size: 32px;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg,#3b82f6,#8b5cf6,#ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 cards per row */
+  gap: 20px;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 per row on tablets */
+  }
+}
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr; /* 1 per row on phones */
+  }
+}
+
+.card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  text-align: center;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+}
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+.card p {
+  font-size: 14px;
+  color: #374151;
+  flex-grow: 1;
+}
+.card a {
+  display: inline-block;
+  text-align: center;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(90deg,#3b82f6,#6366f1,#8b5cf6);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+.card a:hover {
+  background: linear-gradient(90deg,#8b5cf6,#6366f1,#3b82f6);
+  transform: translateY(-2px);
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Games Hub</h1>
+    <div class="grid">
+      <div class="card">
+        <h2>🌬️ Breathing Bubble</h2>
+        <p>Sync your breath with a gentle expanding bubble.</p>
+        <a href="breathing.html">Play</a>
+      </div>
+      <div class="card">
+        <h2>🌳 Calm Quest</h2>
+        <p>Grow a tree with every healthy action you take.</p>
+        <a href="calmquest.html">Play</a>
+      </div>
+      <div class="card">
+        <h2>⚡ Stress Catcher</h2>
+        <p>Catch positive words and dodge the negative ones.</p>
+        <a href="stresscatcher.html">Play</a>
+      </div>
+      <div class="card">
+        <h2>🎵 Mood Melody</h2>
+        <p>Tap calming keys and compose music to reflect your mood.</p>
+        <a href="melody.html">Play</a>
+      </div>
+      <div class="card">
+        <h2>🪴 Zen Garden</h2>
+        <p>Design your own peaceful garden with stones and flowers.</p>
+        <a href="zengarden.html">Play</a>
+      </div>
+      <div class="card">
+        <h2>🐾 Stress Buddy</h2>
+        <p>Adopt a pet that grows happier as you care for yourself.</p>
+        <a href="pet.html">Play</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
