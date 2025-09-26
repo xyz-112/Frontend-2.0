@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mood Journal Animated</title>
+<style>
+body {
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:"Poppins",sans-serif;
+  background: linear-gradient(-45deg,#dbeafe,#ede9fe,#fce7f3,#dcfce7);
+  background-size:400% 400%;
+  animation: gradient 18s ease infinite;
+  overflow:hidden;
+}
+@keyframes gradient {
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+/* floating bubbles */
+.bubble {
+  position:fixed;
+  border-radius:50%;
+  opacity:0.35;
+  animation: float 25s infinite linear, pulse 6s infinite ease-in-out;
+}
+@keyframes float {
+  from { transform:translateY(110vh) scale(0.5);}
+  to { transform:translateY(-20vh) scale(1);}
+}
+@keyframes pulse {
+  0%,100%{ transform:scale(1);}
+  50%{ transform:scale(1.15);}
+}
+
+/* app card */
+.app {
+  width:min(950px,95%);
+  background:rgba(255,255,255,0.82);
+  backdrop-filter:blur(18px);
+  border-radius:20px;
+  box-shadow:0 8px 28px rgba(0,0,0,0.2);
+  padding:28px;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+  animation:fadeIn 1s ease;
+  z-index:10;
+}
+@keyframes fadeIn {
+  from{opacity:0;transform:translateY(40px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+h1 {
+  margin:0;
+  font-size:28px;
+  font-weight:600;
+  text-align:center;
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6,#ec4899);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation: popIn 1s ease;
+}
+@keyframes popIn {
+  from{transform:scale(0.8);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+#today { text-align:center;font-size:14px;color:#475569; }
+
+/* moods */
+.moods { display:flex;gap:12px;justify-content:center;flex-wrap:wrap; }
+.mood {
+  font-size:2rem;
+  padding:10px 14px;
+  border:none;border-radius:16px;
+  background:#fff;
+  cursor:pointer;
+  transition:transform .2s, box-shadow .2s;
+  position:relative;
+  animation: bounceIn 0.8s ease forwards;
+}
+.mood:nth-child(2){animation-delay:0.1s}
+.mood:nth-child(3){animation-delay:0.2s}
+.mood:nth-child(4){animation-delay:0.3s}
+.mood:nth-child(5){animation-delay:0.4s}
+@keyframes bounceIn {
+  from{transform:scale(0.3);opacity:0;}
+  50%{transform:scale(1.2);opacity:1;}
+  to{transform:scale(1);}
+}
+.mood:hover::after {
+  content:attr(data-label);
+  position:absolute;
+  bottom:-22px; left:50%; transform:translateX(-50%);
+  font-size:12px; color:#374151;
+}
+.mood.active {
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6,#ec4899);
+  color:#fff;
+  box-shadow:0 0 20px rgba(139,92,246,0.6);
+  transform:scale(1.25);
+  animation:ripple 0.6s ease;
+}
+@keyframes ripple {
+  0%{box-shadow:0 0 0 0 rgba(139,92,246,0.5);}
+  100%{box-shadow:0 0 0 20px transparent;}
+}
+
+/* editor */
+.editor {
+  min-height:160px;
+  background:#fff;
+  border-radius:14px;
+  padding:16px;
+  font-size:15px;
+  line-height:1.6;
+  outline:none;
+  border:1px solid #e5e7eb;
+  transition:box-shadow .3s;
+  animation:fadeInUp 0.8s ease;
+}
+.editor:focus { box-shadow:0 0 14px rgba(139,92,246,0.45); }
+@keyframes fadeInUp {
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* buttons */
+.actions { display:flex; gap:12px; justify-content:flex-end; }
+.btn {
+  padding:10px 20px;
+  border:none;border-radius:12px;
+  font-weight:600;cursor:pointer;
+  transition:transform .2s, box-shadow .25s;
+  position:relative;overflow:hidden;
+}
+.btn-primary {
+  background:linear-gradient(135deg,#3b82f6,#8b5cf6,#ec4899);
+  color:#fff;
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 16px rgba(139,92,246,0.5); }
+.btn-secondary { background:#fff;border:1px solid #e5e7eb; }
+.btn-secondary:hover { background:#f9fafb; }
+
+/* entries */
+h2 { margin:10px 0 0; font-size:18px; }
+.entries { display:flex;flex-direction:column;gap:12px;max-height:230px;overflow:auto; }
+.entry {
+  background:#fff;
+  border-radius:14px;
+  padding:12px;
+  border-left:6px solid #8b5cf6;
+  box-shadow:0 6px 14px rgba(0,0,0,0.08);
+  animation:slideIn 0.6s ease;
+}
+@keyframes slideIn {
+  from{opacity:0;transform:translateY(15px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.head { display:flex;justify-content:space-between;align-items:center; }
+.chip { padding:4px 10px;border-radius:999px;background:#f3f4f6;font-weight:600; }
+.time { color:#6b7280;font-size:12px; }
+.entry-actions button {
+  border:none;background:#f3f4f6;padding:2px 6px;
+  border-radius:6px;cursor:pointer;font-size:12px;
+  transition:background .2s;
+}
+.entry-actions button:hover { background:#fee2e2; }
+
+/* stats */
+.stats { margin-top:10px; }
+.bar { display:flex;gap:6px;align-items:flex-end;height:80px; }
+.bar div {
+  flex:1;border-radius:6px;text-align:center;
+  color:#fff;font-size:12px;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation: growBar 1s ease forwards;
+}
+@keyframes growBar {
+  from{height:10px;}
+  to{height:var(--h);}
+}
+.quote { margin-top:12px;text-align:center;font-size:14px;color:#475569;font-style:italic; }
+
+/* floating particles when saved */
+.particle {
+  position:absolute;
+  animation: rise 1.5s ease forwards;
+  font-size:20px;
+}
+@keyframes rise {
+  from{opacity:1;transform:translateY(0);}
+  to{opacity:0;transform:translateY(-60px);}
+}
+</style>
+</head>
+<body>
+<!-- bubbles -->
+<div class="bubble" style="width:60px;height:60px;left:10%;background:#93c5fd;animation-duration:22s;"></div>
+<div class="bubble" style="width:40px;height:40px;left:70%;background:#f9a8d4;animation-duration:18s;"></div>
+<div class="bubble" style="width:80px;height:80px;left:40%;background:#a7f3d0;animation-duration:28s;"></div>
+
+<div class="app">
+  <h1>🌿 Mood Journal</h1>
+  <div id="today"></div>
+
+  <div class="moods" id="moods">
+    <button class="mood" data-mood="happy" data-label="Happy">😊</button>
+    <button class="mood" data-mood="sad" data-label="Sad">😢</button>
+    <button class="mood" data-mood="angry" data-label="Angry">😡</button>
+    <button class="mood" data-mood="excited" data-label="Excited">🤩</button>
+    <button class="mood" data-mood="calm" data-label="Calm">😌</button>
+  </div>
+
+  <div id="editor" class="editor" contenteditable="true"></div>
+  <div class="actions">
+    <button id="clear" class="btn btn-secondary">Clear</button>
+    <button id="save" class="btn btn-primary">Save</button>
+  </div>
+
+  <h2>Recent Entries</h2>
+  <div id="entries" class="entries"></div>
+  <div class="stats" id="stats"></div>
+  <div class="quote" id="quote"></div>
+</div>
+
+<script>
+const today=new Date();
+document.getElementById("today").textContent=
+  today.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+
+let currentMood=null,currentEmoji=null;
+document.getElementById("moods").onclick=e=>{
+  const b=e.target.closest(".mood"); if(!b) return;
+  document.querySelectorAll(".mood").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  currentMood=b.dataset.mood;
+  currentEmoji=b.textContent;
+};
+
+const KEY="mood.animated";
+const load=()=>JSON.parse(localStorage.getItem(KEY)||"[]");
+const saveAll=a=>localStorage.setItem(KEY,JSON.stringify(a));
+
+function render(){
+  const list=document.getElementById("entries");
+  list.innerHTML="";
+  load().reverse().forEach((e,i)=>{
+    const d=document.createElement("div");
+    d.className="entry";
+    d.innerHTML=`
+      <div class="head">
+        <span class="chip">${e.emoji} ${e.mood}</span>
+        <span class="time">${e.time}</span>
+        <div class="entry-actions">
+          <button onclick="del(${i})">🗑</button>
+        </div>
+      </div>
+      <div>${e.html}</div>`;
+    list.appendChild(d);
+  });
+  updateStats();
+}
+render();
+
+function del(i){
+  let arr=load();
+  arr.splice(arr.length-1-i,1);
+  saveAll(arr); render();
+}
+
+document.getElementById("save").onclick=()=>{
+  if(!currentEmoji) return alert("Pick a mood 🌿");
+  const html=document.getElementById("editor").innerHTML.trim();
+  if(!html) return alert("Write something...");
+  const arr=load();
+  arr.push({mood:currentMood,emoji:currentEmoji,html,time:new Date().toLocaleString()});
+  saveAll(arr);
+  document.getElementById("editor").innerHTML="";
+  currentMood=null;currentEmoji=null;
+  document.querySelectorAll(".mood").forEach(x=>x.classList.remove("active"));
+  render();
+  randomQuote();
+  floatEmoji("✨");
+};
+
+document.getElementById("clear").onclick=()=>document.getElementById("editor").innerHTML="";
+
+function updateStats(){
+  const box=document.getElementById("stats");
+  box.innerHTML="";
+  const counts={};
+  load().forEach(e=>counts[e.mood]=(counts[e.mood]||0)+1);
+  const bar=document.createElement("div");
+  bar.className="bar";
+  ["happy","sad","angry","excited","calm"].forEach(m=>{
+    const div=document.createElement("div");
+    const val=counts[m]||0;
+    div.style.setProperty("--h",(val*20+10)+"px");
+    div.style.background=getColor(m);
+    div.textContent=val?val:"";
+    bar.appendChild(div);
+  });
+  box.appendChild(bar);
+}
+function getColor(m){
+  return {happy:"#facc15",sad:"#60a5fa",angry:"#ef4444",excited:"#f97316",calm:"#34d399"}[m];
+}
+
+const quotes=[
+  "Breathe in, breathe out 🌿",
+  "Progress, not perfection ✨",
+  "Your feelings are valid 💜",
+  "Small steps count 🚶",
+  "You are enough 🌸"
+];
+function randomQuote(){
+  document.getElementById("quote").textContent=
+    quotes[Math.floor(Math.random()*quotes.length)];
+}
+
+function floatEmoji(emoji){
+  const p=document.createElement("div");
+  p.className="particle";
+  p.style.left=Math.random()*window.innerWidth+"px";
+  p.style.bottom="40px";
+  p.textContent=emoji;
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),1500);
+}
+</script>
+</body>
+</html>
