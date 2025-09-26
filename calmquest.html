@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calm Quest — Enhanced Tree</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(-45deg, #bbf7d0, #bfdbfe, #e9d5ff, #fecdd3);
+      background-size: 400% 400%;
+      animation: bg 18s ease infinite;
+    }
+    @keyframes bg {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15));
+      backdrop-filter: blur(14px);
+      border-radius: 22px;
+      padding: 20px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #22c55e, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tree-area {
+      position: relative;
+      height: 150px;
+      margin-bottom: 10px;
+    }
+
+    .tree-stage {
+      font-size: 65px;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .tree-stage.show {
+      display: block;
+      opacity: 1;
+    }
+    .tree-stage.glow {
+      animation: glowPulse 2s infinite ease-in-out;
+    }
+    @keyframes glowPulse {
+      0% { text-shadow: 0 0 6px #a78bfa, 0 0 12px #facc15; }
+      50% { text-shadow: 0 0 18px #c084fc, 0 0 35px #fbbf24; }
+      100% { text-shadow: 0 0 6px #a78bfa, 0 0 12px #facc15; }
+    }
+
+    .fruit {
+      position: absolute;
+      font-size: 22px;
+      cursor: pointer;
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .fruit.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .fruit.collected {
+      animation: dropToBasket 0.8s forwards ease-in;
+    }
+    @keyframes dropToBasket {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      70% { transform: translateY(60px) scale(0.5); opacity: 0.7; }
+      100% { transform: translateY(100px) scale(0.2); opacity: 0; }
+    }
+
+    button {
+      margin-top: 8px;
+      padding: 9px 18px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      transition: transform 0.2s ease;
+    }
+    button:hover { transform: scale(1.07); }
+
+    .basket {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .encouragement {
+      margin-top: 10px;
+      font-size: 13px;
+      font-style: italic;
+      color: #065f46;
+      min-height: 20px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .encouragement.show {
+      opacity: 1;
+    }
+
+    a {
+      display: block;
+      margin-top: 15px;
+      font-size: 13px;
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🌲 Calm Quest</h1>
+    <div id="treeArea" class="tree-area">
+      <!-- Tree Stages -->
+      <div class="tree-stage" id="stage1">🌱</div>
+      <div class="tree-stage" id="stage2">🌿</div>
+      <div class="tree-stage" id="stage3">🌴</div>
+      <div class="tree-stage" id="stage4">🌳✨</div>
+
+      <!-- Rare Fruits -->
+      <div class="fruit" id="fruit1" style="top:20px; left:40px;">💎</div>
+      <div class="fruit" id="fruit2" style="top:35px; left:90px;">🍇</div>
+      <div class="fruit" id="fruit3" style="top:50px; left:65px;">🍈</div>
+      <div class="fruit" id="fruit4" style="top:25px; left:130px;">✨</div>
+    </div>
+
+    <button id="growBtn">🌱 Grow Tree</button>
+    <div class="basket">🧺 Fruits Collected: <span id="basketCount">0</span></div>
+    <div class="encouragement" id="encouragement">Click to begin your tree’s journey!</div>
+    <a href="games.html">⬅ Back to Games Hub</a>
+  </div>
+
+  <script>
+    const stages = [
+      document.getElementById("stage1"),
+      document.getElementById("stage2"),
+      document.getElementById("stage3"),
+      document.getElementById("stage4"),
+    ];
+    const fruits = [
+      document.getElementById("fruit1"),
+      document.getElementById("fruit2"),
+      document.getElementById("fruit3"),
+      document.getElementById("fruit4"),
+    ];
+    const encouragementEl = document.getElementById("encouragement");
+    const basketCountEl = document.getElementById("basketCount");
+
+    const messages = [
+      "A sapling is born 🌱",
+      "It’s becoming a plant 🌿",
+      "Your tree is strong 🌴",
+      "A mythical tree stands tall 🌳✨",
+    ];
+
+    let stage = 0;
+    let basketCount = 0;
+
+    function showStage(n) {
+      stages.forEach((s, i) => {
+        s.classList.toggle("show", i === n);
+        if (i === 3 && i === n) s.classList.add("glow"); // glow only at final
+      });
+    }
+
+    document.getElementById("growBtn").addEventListener("click", () => {
+      if (stage < stages.length) {
+        showStage(stage);
+        encouragementEl.textContent = messages[stage];
+        encouragementEl.classList.add("show");
+        if (stage === 3) fruits.forEach(fruit => fruit.classList.add("show"));
+        stage++;
+      } else {
+        encouragementEl.textContent = "Your mythical tree is complete 💫";
+      }
+    });
+
+    fruits.forEach(fruit => {
+      fruit.addEventListener("click", () => {
+        if (!fruit.classList.contains("collected")) {
+          fruit.classList.add("collected");
+          basketCount++;
+          basketCountEl.textContent = basketCount;
+          encouragementEl.textContent = "You collected a rare fruit 🧺✨";
+          encouragementEl.classList.add("show");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
